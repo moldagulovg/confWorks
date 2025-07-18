@@ -1,0 +1,10 @@
+,name,smiles
+0,Twistane,C1CC2CC3C1CC2CC3
+1,Sparteine,C1CCN2C[C@@H]3C[C@@H](CN4CCCC[C@H]34)[C@@H]2C1
+2,Estrone,C[C@]12CC[C@H]3[C@H]([C@@H]1CCC2=O)CCC4=C3C=CC(=C4)O
+3,Penicillin V,CC1([C@@H](N2[C@H](S1)[C@@H](C2=O)NC(=O)COC3=CC=CC=C3)C(=O)O)C
+4,Quinine,COC1=CC2=C(C=CN=C2C=C1)[C@H]([C@@H]3C[C@@H]4CCN3C[C@@H]4C=C)O
+5,Morphine,CN1CC[C@]23[C@H]4C=C[C@@H]([C@@H]2OC5=C3C(=CC=C5O)C[C@@H]41)O
+6,Sucrose,C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O[C@]2([C@H]([C@@H]([C@H](O2)CO)O)O)CO)O)O)O)O
+7,Tetrodotoxin,C([C@@]1([C@H]2[C@@H]3[C@H](N=C(N[C@@]34[C@@H]([C@@H]1O[C@]([C@H]4O)(O2)O)O)N)O)O)O
+8,Taxol,CC1=C2[C@H](C(=O)[C@]3(C)[C@H](C[C@@H]4[C@@](CO4)(C3[C@@H]([C@](C[C@@H]1OC(=O)[C@@H]([C@H](C5=CC=CC=C5)N=C(C6=CC=CC=C6)O)O)(C2(C)C)O)OC(=O)C7=CC=CC=C7)OC(=O)C)O)OC(=O)C
