@@ -26,23 +26,21 @@ To install the *confWorks* package:
 4. now you may import to your python code ```import confworks```
 
 
-## The rest
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/quinine_2D.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/quinine_3D.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/quinine_3D_ensemble.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/rmsd_matrix.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/rmsd_hist.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/conf_space_tsne.jpg)
-![](https://moldagulovg.github.io/rdkit-xtb-geomopt/docs/assets/conf_space_energy_landscape.jpg)
 
+## Short Overview (TBA):
+- read_multiconf_sdf;
+- save_multiconf_sdf;
+- xtb_SP;
+- optimize_molecule;
+- conformer_search;
 
-## Methods:
-- Sampled 10-108k mononuclear organometallic complexes from tmQM dataset and CSD <sup>[1, 2]</sup>;
-- Vectorized molecules were embedded/projected into 2D TMAP representation <sup>[3]</sup>;
-- Molecules were vectorized by MHFP (MinHash Fingerprint)<sup>[4]</sup>;
-- Chemical space was visualized with interactive Faerun module <sup>[5]</sup>;
-- Visualization of individual molecules in various 3D representations was impleted using 3Dmol.js <sup>[6]</sup>.
-
+![](https://moldagulovg.github.io/confWorks/docs/assets/quinine_2D.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/quinine_3D.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/quinine_3D_ensemble.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/rmsd_matrix.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/rmsd_hist.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/conf_space_tsne.jpg)
+![](https://moldagulovg.github.io/confWorks/docs/assets/conf_space_energy_landscape.jpg)
 
 ## What's next?
 - Further updates will include conformer sampling using CREST;
