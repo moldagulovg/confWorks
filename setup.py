@@ -8,7 +8,7 @@ setup(
     author_email='moldagulovg@gmail.com',
     url='https://github.com/moldagulovg/confWorks',
     packages=['confworks'],
-    install_requires=['rdkit==2025.3.4',
+    install_requires=['rdkit==2025.3.3',
                       'tqdm',
                       'numpy==1.26.4',
                       'pandas',
