@@ -268,7 +268,7 @@ def optimize_molecule(mol_object,
 
     # TODO add confId value checker, should be either False or int value within numConfs.
 
-    for confX in range(numConfs):
+    for confX in range(tqdm(numConfs)):
         if confId:
             if confX != confId:
                 continue
@@ -284,7 +284,7 @@ def optimize_molecule(mol_object,
             start = time.time()
             subprocess.run(["xtb", "out.sdf"] + xtb_flags)
             end = time.time()  
-            print(f'elapsed time for optimization: {end-start}')
+            # print(f'elapsed time for optimization: {end-start}')
 
             # TODO add checking if xtb optimization crashed for the file or was successfull
             # TODO get geometry optimization statistics including (1) elapsed time for each input, (2) num of iterations for each, (3) num successful, (4) num failed.
@@ -313,6 +313,8 @@ def conformer_search(mol,
                     topo_change=False,
                     settings='normal',
                     charge=0,
+                    confId=False,
+                    freeze_atoms=None
                     ):
     
     crest_flags = []
@@ -357,59 +359,82 @@ def conformer_search(mol,
         
 
     cwd_path = os.getcwd()
-    try:
-        temp_dir = tempfile.mkdtemp(prefix='temp_geom_opt_')
-        os.chdir(temp_dir)
-        writer = Chem.SDWriter("input.sdf")
-        writer.write(mol)
-        writer.close()
     
-        start = time.time()
-        process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,)
-        end = time.time()  
-        print(f'elapsed time for conformer search: {end-start}')
+    numConfs = mol.GetNumConformers()
 
-        # Parse the output SDF from CREST
-        output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
-        if not os.path.exists(output_sdf):
-            raise FileNotFoundError(f"CREST output file not found: {output_sdf}")
-        
-        # Load conformers from SDF into RDKit mol object
-        conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False)
-        base_mol = Chem.Mol(conformer_supplier[0])
-        
-        # TODO consider loading energies of each conformers
-        for i, mol in enumerate(conformer_supplier):
-            if i != 0:
-                conf = mol.GetConformer()
-                base_mol.AddConformer(conf)
+    base_mol_list = []
 
-        print(f'Successfully sampled {base_mol.GetNumConformers()} conformers')
-        # Extract energies from the second line of each conformer in the SDF file
-        conformer_energies = {}
-        with open(output_sdf, 'r') as sdf_file:
-            lines = sdf_file.readlines()
+    for confX in range(tqdm(numConfs)):
+        if confId:
+            if confX != confId:
+                continue
+
+        try:
+            temp_dir = tempfile.mkdtemp(prefix='temp_geom_opt_')
+            os.chdir(temp_dir)
+
+            Chem.SDWriter("input.sdf").write(mol, confId=confX)
+
+            if freeze_atoms is not None:
+                generate_constraints(freeze_atoms, filename="constraints.inp")
+                crest_flags+=['--input', 'constraints.inp']
         
-        i = 0  # index of the conformer
-        for line_index, line in enumerate(lines):
-            # TODO below line might be incorrect, probably it should be 'energy: '
-            if "Energy =" in line:  # Check for the line with energy info
-                energy_str = line.split("=")[-1].strip()  # Extract the energy part
-                energy = float(energy_str)
-                conformer_energies[i] = energy
-                i += 1  # Move to the next conformer
+            start = time.time()
+            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,)
+            end = time.time()  
+            # print(f'elapsed time for conformer search: {end-start}')
+
+            # Parse the output SDF from CREST
+            output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
+            if not os.path.exists(output_sdf):
+                raise FileNotFoundError(f"CREST output file not found: {output_sdf}")
+            
+            # Load conformers from SDF into RDKit mol object
+            conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False)
+            base_mol = Chem.Mol(conformer_supplier[0])
+            
+            # TODO consider loading energies of each conformers
+            for i, suppl_mol in enumerate(conformer_supplier):
+                if i != 0:
+                    conf = suppl_mol.GetConformer()
+                    base_mol.AddConformer(conf)
+
+            print(f'Successfully sampled {base_mol.GetNumConformers()} conformers')
+
+            # Extract energies from the second line of each conformer in the SDF file
+            conformer_energies = {}
+            with open(output_sdf, 'r') as sdf_file:
+                lines = sdf_file.readlines()
+            
+            index_conf = 0  # index of the conformer
+            for line_index, line in enumerate(lines):
+                # TODO below line might be incorrect, probably it should be 'energy: '
+                if "Energy =" in line:  # Check for the line with energy info
+                    energy_str = line.split("=")[-1].strip()  # Extract the energy part
+                    energy = float(energy_str)
+                    conformer_energies[index_conf] = energy
+                    index_conf += 1  # Move to the next conformer
+            
+            for conf_j, conf in enumerate(base_mol.GetConformers()):
+                conf.SetIntProp("conf_cluster", confX)
+                conf.SetIntProp("conf_id", conf_j)
+                
+                energy = conformer_energies[conf_j]
+                conf.SetDoubleProp("conf_energy", energy)
+            base_mol.SetIntProp("conf_cluster", confX)
+            base_mol_list.append(base_mol)
+        
+        finally:
+            os.chdir(cwd_path)
+            if output_dir:
+                # Ensure output directory doesn't exist
+                if os.path.exists(output_dir):
+                    shutil.rmtree(output_dir)
+
+                shutil.copytree(temp_dir, output_dir)
+            shutil.rmtree(temp_dir)
     
-    finally:
-        os.chdir(cwd_path)
-        if output_dir:
-            # Ensure output directory doesn't exist
-            if os.path.exists(output_dir):
-                shutil.rmtree(output_dir)
-
-            shutil.copytree(temp_dir, output_dir)
-        shutil.rmtree(temp_dir)
-
-    return base_mol, conformer_energies
+    return base_mol_list
 
 
 def get_elements_coordinates(mol, confId=-1):
