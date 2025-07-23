@@ -19,7 +19,10 @@ You can easily:
 
 ## Installation
 
-To install the *confWorks* package:
+Install *xTB* separately via conda:
+```conda install xtb``
+
+Then install the *confWorks* package:
 1. ```git clone https://github.com/moldagulovg/confWorks.git```
 2. cd into cloned *confWorks* folder;
 3. ```pip install -e .```
