@@ -265,10 +265,11 @@ def optimize_molecule(mol_object,
 
     path = os.getcwd()
     numConfs = mol_object.GetNumConformers()
+    print('x')
 
     # TODO add confId value checker, should be either False or int value within numConfs.
 
-    for confX in range(tqdm(numConfs)):
+    for confX in tqdm(range(numConfs)):
         if confId:
             if confX != confId:
                 continue
@@ -282,7 +283,11 @@ def optimize_molecule(mol_object,
                 generate_constraints(freeze_atoms, filename="constraints.inp")
                 xtb_flags+=['--input', 'constraints.inp']
             start = time.time()
-            subprocess.run(["xtb", "out.sdf"] + xtb_flags)
+            process = subprocess.run(["xtb", "out.sdf"] + xtb_flags, 
+                                     capture_output=True, # This captures stdout and stderr
+                                     text=True,           # Decodes stdout and stderr as text using default encoding
+                                     check=False
+                                     )
             end = time.time()  
             # print(f'elapsed time for optimization: {end-start}')
 
@@ -364,7 +369,7 @@ def conformer_search(mol,
 
     base_mol_list = []
 
-    for confX in range(tqdm(numConfs)):
+    for confX in tqdm(range(numConfs)):
         if confId:
             if confX != confId:
                 continue
@@ -380,7 +385,11 @@ def conformer_search(mol,
                 crest_flags+=['--input', 'constraints.inp']
         
             start = time.time()
-            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,)
+            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
+                                     capture_output=True, # This captures stdout and stderr
+                                     text=True,           # Decodes stdout and stderr as text using default encoding
+                                     check=False
+                                     )
             end = time.time()  
             # print(f'elapsed time for conformer search: {end-start}')
 
