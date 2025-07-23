@@ -17,5 +17,6 @@ setup(
                       'stk',
                       'stko',
                       'opentsne',
+                      'py3Dmol',
                       ]
 )
