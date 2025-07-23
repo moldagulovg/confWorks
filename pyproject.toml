@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "confWorks"
+version = "2025.07"
+description = "Convenient python-wrapper for handling multconformer RDKit molecules and conducting geometry optimization and conformational sampling routines (GFN-xTB semi-empirical theory levels)."
+authors = [
+  { name = "Galymzhan Moldagulov", email = "moldagulovg@gmail.com" },
+]
+readme = "README.md" # Assuming you'll create a README.md file
+requires-python = ">=3.8" # Recommended: specify minimum Python version
+keywords = ["chemistry", "rdkit", "conformational sampling", "geometry optimization", "xtb"] # Optional: Add relevant keywords
+license = { text = "MIT" } # Optional: Specify your license, e.g., MIT, BSD-3-Clause, Apache-2.0
+classifiers = [ # Optional: Classifiers help users find your package
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "rdkit==2025.3.3",
+    "tqdm",
+    "numpy==1.26.4",
+    "pandas",
+    "joblib",
+    "chemiscope",
+    "stk",
+    "stko",
+    "opentsne",
+    "py3Dmol",
+]
+
+[project.urls]
+Homepage = "https://github.com/moldagulovg/confWorks"
+"Bug Tracker" = "https://github.com/moldagulovg/confWorks/issues" # Optional: Add a link to your issue tracker
+
+[tool.setuptools]
+packages = ["confworks"] # Specify the packages to include
+# You can also use `packages = find:` if you prefer setuptools to find them automatically
+# However, explicit listing is clearer for a single package like 'confworks'
+
+# If your project has no top-level __init__.py and uses flat layout
+# py-modules = ["your_module"]
