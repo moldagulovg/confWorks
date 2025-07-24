@@ -18,9 +18,15 @@ You can easily:
 - Visualize the conformational landscape of RDKit Mols;
 - Inspect individual geometry optimization trajectories.
 
+Try quick demo in Google Colab:
+
+[![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/moldagulovg/confWorks/blob/main/demo.ipynb) 
+
 ## Requirements
-- Python (version ≥ 3.9);
-- RDKit (version ≥ 2022);
+- Python (version ≥ 3.9)
+- RDKit (version ≥ 2022)
+- xTB (version ≥ 6.7.1)
+- CREST (version ≥ 3.0.2)
 
 ## Installation
 
@@ -28,12 +34,13 @@ First, install *xTB* and *CREST* to your virtual environment via conda:
 ```conda install xtb && conda install conda-forge::crest```
 
 Second install the *confWorks* via pip and git:
-```pip install git+https://github.com/moldagulovg/confWorks.git``
+```pip install git+https://github.com/moldagulovg/confWorks.git```
 
 Finally, you may import *confWorks* to your python code ```import confworks```
 
 
 ## Short Overview (TBA):
+
 - read_multiconf_sdf;
 - save_multiconf_sdf;
 - xtb_SP;
@@ -49,8 +56,8 @@ Finally, you may import *confWorks* to your python code ```import confworks```
 ![](https://moldagulovg.github.io/confWorks/docs/assets/conf_space_energy_landscape.jpg)
 
 ## What's next?
-- Further updates will include conformer sampling using CREST;
-- xTB metadynamics simulations.
+- xTB metadynamics simulations;
+- more to come;
 
 
 ## References:
