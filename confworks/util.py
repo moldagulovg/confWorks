@@ -318,6 +318,7 @@ def conformer_search(mol,
                     topo_change=False,
                     settings='normal',
                     charge=0,
+                    unpaired_e=None,
                     confId=False,
                     freeze_atoms=None
                     ):
@@ -328,6 +329,10 @@ def conformer_search(mol,
         crest_flags += ["--chrg", str(charge)]
     else:
         raise ValueError(f'charge shall be integer, {type(charge)} was given instead')
+    
+    if unpaired_e is not None:
+        ##check if the format is correct
+        xtb_flags+=["--uhf", str(unpaired_e)]
     
     if gfn_xtb==2 or gfn_xtb==1 or gfn_xtb==0:
         crest_flags+=["--gfn",str(gfn_xtb)]
@@ -364,13 +369,34 @@ def conformer_search(mol,
         
 
     cwd_path = os.getcwd()
-    
+    energies = []
     numConfs = mol.GetNumConformers()
+
+    if not confId:
+        if not mol.GetConformer(0).HasProp('conf_energy'):    
+            mol = xtb_SP(mol,
+                        gfn_xtb=gfn_xtb,
+                        solvent=solvent,
+                        charge=charge,
+                        unpaired_e=unpaired_e,
+                        confId=confId,
+                        freeze_atoms=freeze_atoms,
+                        )
+        
+        for i, confX in enumerate(range(numConfs)):
+            conf = mol.GetConformer(confX)
+            energies.append(conf.GetDoubleProp('conf_energy'))
+
+        minE = min(energies)
 
     base_mol_list = []
 
-    for confX in tqdm(range(numConfs)):
-        if confId:
+    for confX in range(numConfs):
+        if not confId:
+            conf = mol.GetConformer(confX)
+            if conf.GetDoubleProp('conf_energy') != minE:
+                continue
+        else:
             if confX != confId:
                 continue
 
@@ -382,7 +408,7 @@ def conformer_search(mol,
 
             if freeze_atoms is not None:
                 generate_constraints(freeze_atoms, filename="constraints.inp")
-                crest_flags+=['--input', 'constraints.inp']
+                crest_flags+=['--cinp', 'constraints.inp']
         
             start = time.time()
             process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
@@ -431,7 +457,6 @@ def conformer_search(mol,
                 energy = conformer_energies[conf_j]
                 conf.SetDoubleProp("conf_energy", energy)
             base_mol.SetIntProp("conf_cluster", confX)
-            base_mol_list.append(base_mol)
         
         finally:
             os.chdir(cwd_path)
@@ -443,7 +468,7 @@ def conformer_search(mol,
                 shutil.copytree(temp_dir, output_dir)
             shutil.rmtree(temp_dir)
     
-    return base_mol_list
+    return base_mol
 
 
 def get_elements_coordinates(mol, confId=-1):
