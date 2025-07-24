@@ -2,7 +2,12 @@
 
 Convenient python-wrapper for handling multconformer RDKit molecules and conducting geometry optimization and conformational sampling routines (GFN-xTB semi-empirical theory levels).
 
-Coded by Galymzhan Moldagulov (Grad student @ IBS-CARS & UNIST, KR)
+Coded by Galymzhan Moldagulov, Sanzhar Nurgaliyev, and Assanali Salem (IBS-CARS & UNIST, KR)
+
+![](https://moldagulovg.github.io/confWorks/docs/assets/confworks.png)
+<div align="center">
+<img src="./docs/assets/confworks.png" alt="confWorks" width="400">
+</div>
 
 You can easily:
 - Handle RDKit Mols with multiple conformers: saving, reading files, storing and loading conformer specific attributes from SDfs;
@@ -19,15 +24,13 @@ You can easily:
 
 ## Installation
 
-Install *xTB* and *CREST* separately via conda:
+First, install *xTB* and *CREST* to your virtual environment via conda:
 ```conda install xtb && conda install conda-forge::crest```
 
-Then install the *confWorks* package:
-1. ```git clone https://github.com/moldagulovg/confWorks.git```
-2. cd into cloned *confWorks* folder;
-3. ```pip install -e .```
-4. now you may import to your python code ```import confworks```
+Second install the *confWorks* via pip and git:
+```pip install git+https://github.com/moldagulovg/confWorks.git``
 
+Finally, you may import *confWorks* to your python code ```import confworks```
 
 
 ## Short Overview (TBA):
