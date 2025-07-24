@@ -19,8 +19,8 @@ You can easily:
 
 ## Installation
 
-Install *xTB* separately via conda:
-```conda install xtb``
+Install *xTB* and *CREST* separately via conda:
+```conda install xtb && conda install conda-forge::crest```
 
 Then install the *confWorks* package:
 1. ```git clone https://github.com/moldagulovg/confWorks.git```
