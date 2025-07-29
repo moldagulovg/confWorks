@@ -7,6 +7,10 @@ import shutil
 import tempfile
 import numpy as np
 from tqdm import tqdm
+import re
+from rdkit.Geometry import Point3D
+import pandas as pd
+
 
 def empty_directory(directory_path):
     try:
@@ -262,12 +266,12 @@ def optimize_molecule(mol_object,
         pass
 
     
-
     path = os.getcwd()
     numConfs = mol_object.GetNumConformers()
-    print('x')
 
     # TODO add confId value checker, should be either False or int value within numConfs.
+
+    opt_trajectories = []
 
     for confX in tqdm(range(numConfs)):
         if confId:
@@ -276,6 +280,7 @@ def optimize_molecule(mol_object,
         try:
             temp_dir = tempfile.mkdtemp(prefix='temp_geom_opt_')
             os.chdir(temp_dir)
+            # print(temp_dir)
             
             Chem.SDWriter('out.sdf').write(mol_object, confId=confX)
 
@@ -299,15 +304,178 @@ def optimize_molecule(mol_object,
                 # Example usage:
                 # Assuming source_mol and target_mol are already defined and have conformers
                 mol_object = copy_conformer_coordinates(source_mol, mol_object, source_confId=-1, target_confId=confX)
+            
             conf = mol_object.GetConformer(confX)
             conf.SetIntProp("conf_id", confX)
             conf.SetDoubleProp("conf_energy", energy)
 
+            ## Record optimization trajectory to a list of mol objects
+            traj_filepath = os.path.join(temp_dir, 'xtbopt.log')
+            trj_mol = add_xtb_conformers_to_mol(mol_object, traj_filepath)
+            trj_mol.SetIntProp('conf_id', confX)
+            opt_trajectories.append(trj_mol)
+
         finally:
             os.chdir(path)
-            shutil.rmtree(temp_dir)  
+            shutil.rmtree(temp_dir)
 
-    return mol_object
+    return mol_object, opt_trajectories
+
+
+
+def parse_xtb_trajectory_log(log_file_path):
+    """
+    Parses an xtb trajectory log file to extract iteration-wise energies,
+    gradient norms, and XYZ coordinates. This version is tailored for
+    logs where each frame starts with atom count, then a comment line with
+    energy/gnorm, followed by coordinates.
+
+    Args:
+        log_file_path (str): Path to the xtb log file.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary contains:
+              'energy': float,
+              'gnorm': float,
+              'xyz_coords': list of lists (atom symbol, x, y, z)
+    """
+    frames_data = []
+
+    # Pattern to detect the number of atoms line
+    num_atoms_pattern = re.compile(r"^\s*(\d+)\s*$")
+
+    # Pattern to extract energy and gnorm from the comment line
+    comment_line_pattern = re.compile(
+        r"^\s*energy:\s*(-?\d+\.\d+)\s+"
+        r"gnorm:\s*(\d+\.\d+)\s+"
+        r"xtb:\s*\d+\.\d+\.\d+\s+\(\S+\)\s*$"
+    )
+
+    # Pattern to parse atom lines (Symbol X Y Z)
+    atom_line_pattern = re.compile(r"^\s*([A-Za-z]{1,3})\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s*$")
+
+    with open(log_file_path, 'r') as f:
+        lines = f.readlines()
+
+    line_iter = iter(lines)
+
+    while True:
+        try:
+            # 1. Read the number of atoms line
+            num_atoms_line = next(line_iter).strip()
+            match_num_atoms = num_atoms_pattern.match(num_atoms_line)
+
+            if not match_num_atoms:
+                break # End of file or unexpected content
+
+            num_atoms = int(match_num_atoms.group(1))
+
+            # 2. Read the comment line (energy, gnorm, xtb version)
+            comment_line = next(line_iter).strip()
+            match_comment = comment_line_pattern.match(comment_line)
+
+            if not match_comment:
+                print(f"Warning: Expected comment line after atom count, but found: '{comment_line}'")
+                break
+
+            energy = float(match_comment.group(1))
+            gnorm = float(match_comment.group(2))
+
+            # 3. Read atom coordinates
+            xyz_coords = []
+            for _ in range(num_atoms):
+                atom_line = next(line_iter).strip()
+                match_atom_line = atom_line_pattern.match(atom_line)
+                if match_atom_line:
+                    symbol = match_atom_line.group(1)
+                    x = float(match_atom_line.group(2))
+                    y = float(match_atom_line.group(3))
+                    z = float(match_atom_line.group(4))
+                    xyz_coords.append([symbol, x, y, z])
+                else:
+                    print(f"Warning: Could not parse atom line: '{atom_line}'")
+                    # Attempt to skip lines if parsing fails to try and recover
+                    # For a robust parser, more sophisticated error handling might be needed
+                    break
+            
+            # If we successfully parsed all atom lines for this frame
+            if len(xyz_coords) == num_atoms:
+                frames_data.append({
+                    'energy': energy,
+                    'gnorm': gnorm,
+                    'xyz_coords': xyz_coords
+                })
+
+        except StopIteration:
+            break # Reached end of file
+        except Exception as e:
+            print(f"An error occurred during parsing: {e} at line: {line_iter.gi_frame.f_lineno}")
+            break
+
+    return frames_data
+
+
+def add_xtb_conformers_to_mol(mol_template: Chem.Mol, log_file_path: str) -> Chem.Mol:
+    """
+    Reads an xtb trajectory log file, extracts geometries and associated data,
+    and adds each as a new conformer to the provided RDKit Mol object.
+
+    Args:
+        mol_template (Chem.Mol): An RDKit Mol object (e.g., the initial geometry,
+                                  or just the molecular graph). It should have the
+                                  correct number of atoms.
+        log_file_path (str): Path to the xtb optimization log file.
+
+    Returns:
+        Chem.Mol: The original Mol object with new conformers added, each
+                  containing 'Step', 'Energy', and 'Gradient Norm' properties.
+    """
+    
+    # Ensure the template mol has no conformers initially if you want to
+    # populate it purely from the log, or ensure it has at least one for atom count.
+    # We will remove existing conformers to start fresh.
+    mol = Chem.Mol(mol_template) # Create a copy to avoid modifying the original
+    mol.RemoveAllConformers()
+
+    parsed_data = parse_xtb_trajectory_log(log_file_path)
+
+    if not parsed_data:
+        print(f"No optimization data found in {log_file_path}. Returning original mol.")
+        return mol_template # Return the original mol if no data
+
+    for step_idx, frame in enumerate(parsed_data):
+        energy = frame['energy']
+        gnorm = frame['gnorm']
+        xyz_coords = frame['xyz_coords']
+        
+        # Check if the number of atoms matches the template molecule
+        if len(xyz_coords) != mol.GetNumAtoms():
+            print(f"Warning: Number of atoms in log frame {step_idx+1} ({len(xyz_coords)}) "
+                  f"does not match template molecule ({mol.GetNumAtoms()}). Skipping this frame.")
+            continue
+
+        # Create a new Conformer object
+        conf = Chem.Conformer(mol.GetNumAtoms())
+
+        # Set the coordinates for each atom in the conformer
+        for i, (symbol, x, y, z) in enumerate(xyz_coords):
+            # RDKit atoms are ordered internally. We assume the XYZ in the log
+            # is in the same order as the atoms in the mol_template.
+            # If not, you'd need to map based on atom symbols or indices.
+            conf.SetAtomPosition(i, Point3D(x, y, z))
+
+        # Add the conformer to the molecule
+        conf_id = mol.AddConformer(conf, assignId=True)
+
+        # Set properties on the conformer object
+        # RDKit stores properties as strings, so convert floats
+        mol.GetConformer(conf_id).SetDoubleProp('step', float(step_idx + 1))
+        mol.GetConformer(conf_id).SetDoubleProp('conf_energy', energy)
+        mol.GetConformer(conf_id).SetDoubleProp('gradient_norm', gnorm)
+        # Note: Using underscore for 'Gradient_Norm' as properties can sometimes be tricky with spaces
+
+    return mol
+
 
 
 def conformer_search(mol, 
@@ -452,6 +620,7 @@ def conformer_search(mol,
             
             for conf_j, conf in enumerate(base_mol.GetConformers()):
                 conf.SetIntProp("conf_cluster", confX)
+                conf.SetId(conf_j)
                 conf.SetIntProp("conf_id", conf_j)
                 
                 energy = conformer_energies[conf_j]
