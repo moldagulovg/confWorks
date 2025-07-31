@@ -210,6 +210,8 @@ def optimize_molecule(mol_object,
                       freeze_atoms=None,
                       ):
     
+    mol_object = Chem.Mol(mol_object)
+
     #############################################################################
     #############################################################################
 
@@ -498,6 +500,11 @@ def conformer_search(mol,
                     verbose=False,
                     ):
     
+    mol = Chem.Mol(mol)
+
+    ###################################################################################
+    ###################################################################################
+    
     crest_flags = []
     
     if isinstance(charge, int):
@@ -595,7 +602,7 @@ def conformer_search(mol,
                                      check=False
                                      )
             end = time.time()  
-            # print(f'elapsed time for conformer search: {end-start}')
+            print(f'elapsed time for conformer search: {end-start}')
 
             # Parse the output SDF from CREST
             output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
@@ -632,6 +639,8 @@ def conformer_search(mol,
                 conf.SetIntProp("conf_cluster", confX)
                 conf.SetId(conf_j)
                 conf.SetIntProp("conf_id", conf_j)
+                settings_str = " ".join(crest_flags)
+                conf.SetProp("crest_settings", settings_str)
                 
                 energy = conformer_energies[conf_j]
                 conf.SetDoubleProp("conf_energy", energy)
@@ -645,7 +654,7 @@ def conformer_search(mol,
                     shutil.rmtree(output_dir)
 
                 shutil.copytree(temp_dir, output_dir)
-            # shutil.rmtree(temp_dir)
+            shutil.rmtree(temp_dir)
     
     return base_mol
 
