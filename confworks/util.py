@@ -207,7 +207,7 @@ def optimize_molecule(mol_object,
                       silent=False,
                       confId=False,
                       charge=0,
-                      freeze_atoms=None
+                      freeze_atoms=None,
                       ):
     
     #############################################################################
@@ -287,9 +287,13 @@ def optimize_molecule(mol_object,
             if freeze_atoms is not None:
                 generate_constraints(freeze_atoms, filename="constraints.inp")
                 xtb_flags+=['--input', 'constraints.inp']
+
+            if verbose: capture_output=False
+            else: capture_output=True
+
             start = time.time()
             process = subprocess.run(["xtb", "out.sdf"] + xtb_flags, 
-                                     capture_output=True, # This captures stdout and stderr
+                                     capture_output=capture_output, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
@@ -308,6 +312,8 @@ def optimize_molecule(mol_object,
             conf = mol_object.GetConformer(confX)
             conf.SetIntProp("conf_id", confX)
             conf.SetDoubleProp("conf_energy", energy)
+            settings_str = " ".join(xtb_flags)
+            conf.SetProp("xtb_settings", settings_str)
 
             ## Record optimization trajectory to a list of mol objects
             traj_filepath = os.path.join(temp_dir, 'xtbopt.log')
@@ -488,7 +494,8 @@ def conformer_search(mol,
                     charge=0,
                     unpaired_e=None,
                     confId=False,
-                    freeze_atoms=None
+                    freeze_atoms=None,
+                    verbose=False,
                     ):
     
     crest_flags = []
@@ -500,10 +507,10 @@ def conformer_search(mol,
     
     if unpaired_e is not None:
         ##check if the format is correct
-        xtb_flags+=["--uhf", str(unpaired_e)]
+        crest_flags+=["--uhf", str(unpaired_e)]
     
-    if gfn_xtb==2 or gfn_xtb==1 or gfn_xtb==0:
-        crest_flags+=["--gfn",str(gfn_xtb)]
+    if gfn_xtb==2 or gfn_xtb==1:
+        crest_flags+=[f"--gfn{gfn_xtb}",]
     elif gfn_xtb=='ff':
         crest_flags+=["--gfnff",]
     else:
@@ -578,9 +585,12 @@ def conformer_search(mol,
                 generate_constraints(freeze_atoms, filename="constraints.inp")
                 crest_flags+=['--cinp', 'constraints.inp']
         
+            if verbose: capture_output=False
+            else: capture_output=True
+
             start = time.time()
             process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
-                                     capture_output=True, # This captures stdout and stderr
+                                     capture_output=capture_output, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
@@ -635,7 +645,7 @@ def conformer_search(mol,
                     shutil.rmtree(output_dir)
 
                 shutil.copytree(temp_dir, output_dir)
-            shutil.rmtree(temp_dir)
+            # shutil.rmtree(temp_dir)
     
     return base_mol
 
