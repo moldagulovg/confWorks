@@ -46,6 +46,7 @@ Finally, you may import *confWorks* to your python code ```import confworks```
 - xtb_SP;
 - optimize_molecule;
 - conformer_search;
+- get_boltzmann_weights.
 
 ![](https://moldagulovg.github.io/confWorks/docs/assets/quinine_2D.jpg)
 ![](https://moldagulovg.github.io/confWorks/docs/assets/quinine_3D.jpg)

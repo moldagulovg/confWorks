@@ -823,3 +823,22 @@ def save_multiconf_sdf(mol, filepath):
 
 # TODO calculate SP energies using xtb 
 
+def get_boltzmann_weights(mol, T=298.15):
+    confs = mol.GetConformers()
+
+    if len(confs) == 1:
+        return np.array([1,])
+    elif len(confs) == 0:
+        raise ValueError('molecule lacks any conformers')
+    
+    energies = [conf.GetDoubleProp('conf_energy') for conf in confs]
+    energies = np.array(energies)
+    # subtract the lowest energy from all three
+    energies -= np.min(energies)
+    # energies are in Hartree
+    boltzmann_coefficients = np.exp(-1 * energies / 0.0009441787 / (T / 298.15))
+    weights = boltzmann_coefficients / np.sum(boltzmann_coefficients)
+    return weights
+
+
+
