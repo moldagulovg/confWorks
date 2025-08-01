@@ -554,6 +554,9 @@ def conformer_search(mol,
     energies = []
     numConfs = mol.GetNumConformers()
 
+    base_mol = Chem.Mol(mol)
+    base_mol.RemoveAllConformers()
+
     if not confId:
         if not mol.GetConformer(0).HasProp('conf_energy'):    
             mol = xtb_SP(mol,
@@ -610,14 +613,13 @@ def conformer_search(mol,
                 raise FileNotFoundError(f"CREST output file not found: {output_sdf}")
             
             # Load conformers from SDF into RDKit mol object
-            conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False)
-            base_mol = Chem.Mol(conformer_supplier[0])
+            conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False, sanitize=False)
+            
             
             # TODO consider loading energies of each conformers
             for i, suppl_mol in enumerate(conformer_supplier):
-                if i != 0:
-                    conf = suppl_mol.GetConformer()
-                    base_mol.AddConformer(conf)
+                conf = suppl_mol.GetConformer()
+                base_mol.AddConformer(conf, assignId=True)
 
             print(f'Successfully sampled {base_mol.GetNumConformers()} conformers')
 
