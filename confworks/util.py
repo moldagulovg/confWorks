@@ -844,3 +844,27 @@ def get_boltzmann_weights(mol, T=298.15):
 
 # here I (dias) will add code for loading coords from xyz to sdf
 
+def SDF2XYZ_convert(sdf_filepath, xyz_filepath, verbose=False):
+    # TODO add copy energies as well
+    # TODO give error msg if sdf_filepath doesn't exist
+    # TODO give error msg if directory of xyz_filepath doesn't exist
+    # TODO check if sdf file has any molecules at all
+    # TODO Check if all mols in sdf are identical (if they share the same atom-bond connectivity)
+
+    suppl = Chem.SDMolSupplier(sdf_filepath)
+    for i, mol in enumerate(suppl):
+        if i == 0:
+            base_mol = mol
+        else:
+            base_mol.AddConformer(mol.GetConformer(), assignId=True)
+    if verbose: 
+        print(f'num of confomrers in base_mol: ', base_mol.GetNumConformers())
+    MolBlock = ''
+
+    for i in range(base_mol.GetNumConformers()):
+        MolBlock += Chem.MolToXYZBlock(base_mol, confId = i)
+    
+    with open(xyz_filepath, "w") as xyz_file:
+        xyz_file.write(MolBlock)
+
+# def XYZ2SDF_loader(xyz_filepath, reference_sdf_filepath, output_sdf_filepath, verbose=False):
