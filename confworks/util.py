@@ -842,5 +842,5 @@ def get_boltzmann_weights(mol, T=298.15):
     weights = boltzmann_coefficients / np.sum(boltzmann_coefficients)
     return weights
 
-
+# here I (dias) will add code for loading coords from xyz to sdf
 
