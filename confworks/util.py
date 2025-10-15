@@ -299,6 +299,7 @@ def optimize_molecule(mol_object,
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
+            
             end = time.time()  
             # print(f'elapsed time for optimization: {end-start}')
 
@@ -491,13 +492,15 @@ def conformer_search(mol,
                     output_dir=None, 
                     solvent=None, 
                     threads=None, 
-                    topo_change=False,
+                    # topo_change=False,
                     settings='normal',
                     charge=0,
                     unpaired_e=None,
                     confId=False,
                     freeze_atoms=None,
                     verbose=False,
+                    notopo=False, # specify which atoms to omit from topology checks
+                    ewin=6, # energy window in kcal/mol, default is 6 kcal/mol
                     ):
     
     mol = Chem.Mol(mol)
@@ -535,11 +538,24 @@ def conformer_search(mol,
         elif solvent.lower() not in available_solvents:
             raise ValueError(f"Invalid solvent choice. \nPlease choose one from the list: ", available_solvents)
         crest_flags+=["--alpb", solvent]
-        
-    if topo_change == True:
-            crest_flags+=['--noreftopo']
-    else:
-        pass
+    
+    if notopo:
+        if notopo == True:
+            crest_flags+=['--notopo']
+        elif type(notopo) == list:
+            notopo_atoms = ",".join(notopo)
+            crest_flags+=[f'--notopo {notopo_atoms}']
+        else:
+            raise ValueError(f'notopo kwarg shall be either True, False or a list of atom indices or symbols')
+    
+    if (type(ewin) == int or type(ewin) == float) and ewin != 6:
+        crest_flags+=[f'--ewin {ewin}']
+
+
+    # if topo_change == True:
+    #         crest_flags+=['--noreftopo']
+    # else:
+    #     pass
     
     settings_list = ['quick', 'squick', 'mquick']
     if settings in settings_list:
@@ -599,7 +615,7 @@ def conformer_search(mol,
             else: capture_output=True
 
             start = time.time()
-            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
+            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags + ['>> crest.xtbout'],
                                      capture_output=capture_output, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
@@ -610,7 +626,8 @@ def conformer_search(mol,
             # Parse the output SDF from CREST
             output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
             if not os.path.exists(output_sdf):
-                raise FileNotFoundError(f"CREST output file not found: {output_sdf}")
+                print(FileNotFoundError(f"CREST output file not found: {output_sdf}"))
+                return None
             
             # Load conformers from SDF into RDKit mol object
             conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False, sanitize=False)
