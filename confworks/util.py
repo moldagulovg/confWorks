@@ -622,13 +622,23 @@ def conformer_search(mol,
             else: capture_output=True
 
             start = time.time()
-            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags + ['>> crest.xtbout'],
+            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
                                      capture_output=capture_output, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
             end = time.time()  
             print(f'elapsed time for conformer search: {end-start}')
+
+            # Write the captured standard output to your file
+            if process.stdout:
+                with open('crest.xtbout', 'a') as f: # 'a' for append, mimics '>>'
+                    f.write(process.stdout)
+
+            # Optionally, write standard error to another file or the same one
+            if process.stderr:
+                with open('crest.xtberr', 'a') as f:
+                    f.write(process.stderr)
 
             # Parse the output SDF from CREST
             output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
