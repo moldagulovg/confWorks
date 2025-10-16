@@ -652,6 +652,8 @@ def conformer_search(mol,
             
             # TODO consider loading energies of each conformers
             for i, suppl_mol in enumerate(conformer_supplier):
+                if suppl_mol is None:
+                    continue
                 conf = suppl_mol.GetConformer()
                 base_mol.AddConformer(conf, assignId=True)
 
