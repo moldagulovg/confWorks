@@ -10,6 +10,7 @@ from tqdm import tqdm
 import re
 from rdkit.Geometry import Point3D
 import pandas as pd
+import sys
 
 
 def empty_directory(directory_path):
@@ -957,7 +958,7 @@ def load_conformers_from_xyz(template_mol, xyz_file):
         # Set atom positions
         for atom_idx in range(num_atoms_template):
             x, y, z = coords[atom_idx]
-            pos = rdGeometry.Point3D(x, y, z)
+            pos = Point3D(x, y, z)
             conf.SetAtomPosition(atom_idx, pos)
             
         # Add the new conformer to the molecule
