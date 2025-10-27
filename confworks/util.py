@@ -622,7 +622,7 @@ def conformer_search(mol,
             else: capture_output=True
 
             start = time.time()
-            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags,
+            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags + ['>> crest.xtbout'],
                                      capture_output=capture_output, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
@@ -630,21 +630,21 @@ def conformer_search(mol,
             end = time.time()  
             print(f'elapsed time for conformer search: {end-start}')
 
-            # Write the captured standard output to your file
-            if process.stdout:
-                with open('crest.xtbout', 'a') as f: # 'a' for append, mimics '>>'
-                    f.write(process.stdout)
-
-            # Optionally, write standard error to another file or the same one
-            if process.stderr:
-                with open('crest.xtberr', 'a') as f:
-                    f.write(process.stderr)
-
             # Parse the output SDF from CREST
             output_sdf = os.path.join(temp_dir, "crest_conformers.sdf")
-            if not os.path.exists(output_sdf):
+            output_xyz = os.path.join(temp_dir, "crest_conformers.xyz")
+
+            if os.path.exists(output_sdf):
+                pass  
+            elif os.path.exists(output_xyz):
+                # Record conformers from XYZ into template SDF
+                mol_xyz2sdf = load_conformers_from_xyz(mol, output_xyz)
+                save_multiconf_sdf(mol_xyz2sdf, output_sdf)
+                print('crest_conformers.xyz recorded as an sdf file.')
+            else:
                 print(FileNotFoundError(f"CREST output file not found: {output_sdf}"))
                 return None
+
             
             # Load conformers from SDF into RDKit mol object
             conformer_supplier = Chem.SDMolSupplier(output_sdf, removeHs=False, sanitize=False)
@@ -879,4 +879,94 @@ def get_boltzmann_weights(mol, T=298.15):
     return weights
 
 
+def load_conformers_from_xyz(template_mol, xyz_file):
+    template_mol = Chem.Mol(template_mol)
+    """
+    Loads coordinates from a multi-conformer XYZ file into a template RDKit molecule.
+
+    CRITICAL ASSUMPTION:
+    The atom order in the XYZ file is *exactly* the same as the atom order
+    in the template_mol.
+    """
+    
+    # --- 1. Read all coordinate blocks from the XYZ file ---
+    all_coords = []
+    conf_energy_list = []
+    try:
+        with open(xyz_file, 'r') as f:
+            lines = f.readlines()
+    except IOError:
+        print(f"Error: Could not read XYZ file: {xyz_file}")
+        return None
+
+    i = 0
+    while i < len(lines):
+        try:
+            # First line: Number of atoms
+            num_atoms = int(lines[i].strip())
+            
+            # Second line: Energy
+            i += 1
+            conf_energy_list.append(float(lines[i].strip()))
+            
+            # Read the coordinates for this block
+            i += 1
+
+            coords = []
+            for j in range(num_atoms):
+                parts = lines[i+j].strip().split()
+                # parts[0] is element, 1-3 are x, y, z
+                x = float(parts[1])
+                y = float(parts[2])
+                z = float(parts[3])
+                coords.append((x, y, z))
+            
+            all_coords.append(coords)
+            
+            # Move index to the start of the next block
+            i += num_atoms
+            
+        except Exception as e:
+            # Handle formatting errors or reaching end of file
+            # print(f"Stopped parsing at line {i+1}: {e}")
+            break
+            
+    if not all_coords:
+        print(f"Error: No conformers found in {xyz_file}")
+        return template_mol
+
+    # print(f"Found {len(all_coords)} conformers in {xyz_file}.")
+
+    # --- 2. Add coordinates as new conformers to the template molecule ---
+    num_atoms_template = template_mol.GetNumAtoms()
+    
+    # Clear any existing conformers from the template
+    template_mol.RemoveAllConformers()
+    
+    confs_added = 0
+    for i, coords_conf_E in enumerate(zip(all_coords, conf_energy_list)):
+        coords, energy = coords_conf_E
+        # ---!!!--- CRITICAL CHECK ---!!!---
+        if len(coords) != num_atoms_template:
+            print(f"Warning: Conformer {i} has {len(coords)} atoms, but template has {num_atoms_template}. Skipping.", file=sys.stderr)
+            continue
+            
+        # Create a new conformer object
+        conf = Chem.Conformer(num_atoms_template)
+        
+        # Set atom positions
+        for atom_idx in range(num_atoms_template):
+            x, y, z = coords[atom_idx]
+            pos = rdGeometry.Point3D(x, y, z)
+            conf.SetAtomPosition(atom_idx, pos)
+            
+        # Add the new conformer to the molecule
+        # assignId=True will give it a unique ID
+        conf_id = template_mol.AddConformer(conf, assignId=True)
+        template_mol.GetConformer(conf_id).SetDoubleProp('conf_energy', energy)
+
+        confs_added += 1
+        
+    # print(f"Successfully added {confs_added} conformers to the template molecule.")
+    return template_mol
 
