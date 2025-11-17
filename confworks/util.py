@@ -837,7 +837,10 @@ def read_multiconf_sdf(filepath):
                 raise ValueError('different conformer IDs!')
             
         new_conf = mol.GetConformer(confX)
-        new_conf.SetDoubleProp('conf_energy', source_mol.GetDoubleProp('conf_energy'))
+        try:
+            new_conf.SetDoubleProp('conf_energy', source_mol.GetDoubleProp('conf_energy'))
+        except:
+            pass
 
     if mol.GetNumConformers() == numConfs:
         return mol
@@ -850,8 +853,8 @@ def save_multiconf_sdf(mol, filepath):
         raise ValueError('No conformers in this molecule.')
     
     writer = Chem.SDWriter(filepath)
-    for confX in range(mol_copy.GetNumConformers()):
-        conf = mol_copy.GetConformer(confX)
+    for conf in mol_copy.GetConformers():
+        confX = conf.GetId()
         mol_copy.SetIntProp("conf_id", confX)
         if conf.HasProp("conf_energy"):
             energy = conf.GetDoubleProp("conf_energy")
