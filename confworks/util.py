@@ -862,6 +862,36 @@ def save_multiconf_sdf(mol, filepath):
         writer.write(mol_copy, confId=confX)
     writer.close()
 
+def save_multiconf_xyz(mol, filepath):
+    """
+    Saves all conformers of an RDKit molecule to a single concatenated XYZ file.
+    The 'conf_energy' property, if present on the conformer, is written to the comment line.
+    """
+    mol_copy = Chem.Mol(mol)
+    if mol_copy.GetNumConformers() == 0:
+        raise ValueError('No conformers in this molecule.')
+
+    with open(filepath, 'w') as writer:
+        for conf in mol_copy.GetConformers():
+            # 1. Write the number of atoms
+            num_atoms = mol_copy.GetNumAtoms()
+            writer.write(f"{num_atoms}\n")
+            
+            # 2. Write the comment line (Energy)
+            comment = ""
+            if conf.HasProp("conf_energy"):
+                energy = conf.GetDoubleProp("conf_energy")
+                # Format matching the reference: roughly 8 decimal places
+                comment = f"       {energy:.8f}"
+            writer.write(f"{comment}\n")
+            
+            # 3. Write the atoms and coordinates for this conformer
+            for atom in mol_copy.GetAtoms():
+                idx = atom.GetIdx()
+                pos = conf.GetAtomPosition(idx)
+                symbol = atom.GetSymbol()
+                # Format matching the reference: Symbol, X, Y, Z with padding
+                writer.write(f"{symbol:<5} {pos.x:15.10f} {pos.y:15.10f} {pos.z:15.10f}\n")
 
 # TODO calculate SP energies using xtb 
 
