@@ -495,7 +495,7 @@ def conformer_search(mol,
                     threads=None, 
                     # topo_change=False,
                     settings='normal',
-                    xlen=False,
+                    len=False,
                     charge=0,
                     unpaired_e=None,
                     confId=False,
@@ -553,9 +553,9 @@ def conformer_search(mol,
     if (type(ewin) == int or type(ewin) == float) and ewin != 6:
         crest_flags+=[f'--ewin {ewin}']
     
-    if xlen:
-        if (type(xlen) == int or type(xlen) == float):
-            crest_flags+=[f'--len {xlen}']
+    if len:
+        if (type(len) == int or type(len) == str or type(len) == float):
+            crest_flags+=[f'--len {len}']
         else:
             raise ValueError(f'xlen kwarg shall be a multiplication factor e.g. 0.5, 3 ')
 
