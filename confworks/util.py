@@ -628,6 +628,10 @@ def conformer_search(mol,
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
+            command_output = process.stdout
+            with open('crest.xtbout', "w") as f:
+                f.write(command_output)
+            
             end = time.time()  
             print(f'elapsed time for conformer search: {end-start}')
 
