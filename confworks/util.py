@@ -623,14 +623,18 @@ def conformer_search(mol,
             else: capture_output=True
 
             start = time.time()
-            process = subprocess.run(['crest', f'{"input.sdf"}'] + crest_flags + ['>> crest.xtbout'],
-                                     capture_output=capture_output, # This captures stdout and stderr
+            print(f'currently running in: {temp_dir}')
+            commandline = ['crest', f'{"input.sdf"}'] + crest_flags + ['>> crest.xtbout',]
+            commandline = " ".join(commandline)
+            process = subprocess.run(commandline,
+                                     shell=True,
+                                     capture_output=False, # This captures stdout and stderr
                                      text=True,           # Decodes stdout and stderr as text using default encoding
                                      check=False
                                      )
-            command_output = process.stdout
-            with open('crest.xtbout', "w") as f:
-                f.write(command_output)
+            # command_output = process.stdout
+            # with open('crest.xtbout', "w") as f:
+            #     f.write(command_output)
             
             end = time.time()  
             print(f'elapsed time for conformer search: {end-start}')
