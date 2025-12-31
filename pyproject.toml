@@ -21,7 +21,7 @@ classifiers = [ # Optional: Classifiers help users find your package
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    "rdkit==2025.3.3",
+    "rdkit,
     "tqdm",
     "numpy==1.26.4",
     "pandas",
