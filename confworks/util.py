@@ -736,22 +736,28 @@ def calc_rmsd(mol, correct_mol):
     rmsd_values_for_conformer = []
     try:
         temp_dir = tempfile.mkdtemp(prefix='temp_geom_opt_')
+        print(temp_dir)
         os.chdir(temp_dir)
 
-        values = []
 
         # use temporary files directory for working with XYZ files
         mol = Chem.RemoveAllHs(mol, sanitize=False)
         for i in range(mol.GetNumConformers()):
+            values = []
             Chem.rdmolfiles.MolToXYZFile(mol, "mol.xyz", confId=i)
             for j in range(correct_mol.GetNumConformers()):
                 Chem.rdmolfiles.MolToXYZFile(correct_mol, "correct.xyz", confId=j)
                 command = f"calculate_rmsd  --reorder --no-hydrogen correct.xyz mol.xyz"
 
                 # Run the command and capture the output
-                value = subprocess.check_output(command, shell=True, text=True)
-                values.append(value)
-        rmsd_values_for_conformer.append([float(value.replace('\n', '')) for value in values])
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                if result.returncode == 0:
+                    values.append(result.stdout.strip())
+                else:
+                    values.append(result.stderr.strip())
+            values = [float(value.replace('\n', '')) for value in values]
+            rmsd_values_for_conformer.append(values)
+            
     finally:
         os.chdir(path)
         shutil.rmtree(temp_dir)  
